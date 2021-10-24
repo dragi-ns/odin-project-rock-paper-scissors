@@ -155,6 +155,8 @@ main {
     height: 50px;
 }
 
+/* MEDIA QUERIES */
+
 @media (hover: hover) {
     .selection:hover {
         border-color: black;
@@ -169,6 +171,11 @@ main {
 @media screen and (max-width: 560px) {
     .title {
         font-size: 1.8rem;
+    }
+
+    .notification,
+    .hint {
+        font-size: 1.2rem;
     }
 
     .cards,
