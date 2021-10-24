@@ -1,106 +1,260 @@
-// Only odd numbers, so that the game is never tie...
-const MAX_POINTS = 5;
-const SELECTIONS = ['rock', 'paper', 'scissors'];
+(function IIFE() {
+    const VALID_SELECTIONS = ['rock', 'paper', 'scissors'];
+    const MAX_POINTS = 5;
+    const ROUND_RESULT = Object.freeze({
+        DRAW: 'DRAW!',
+        USER_WON: 'USER WON THIS ROUND!',
+        CPU_WON: 'CPU WON THIS ROUND!',
+    });
 
-function makePlural(amount, word) {
-    return amount === 0 || amount > 1 ? word + 's' : word;
-}
+    const userInfoScore = document.querySelector('.user-info .score');
+    const userInfoIcon = document.querySelector('.user-info .icon');
+    const userInfoText = document.querySelector('.user-info .text');
 
-function getRandomNumber(maxNumber) {
-    return Math.floor(Math.random() * maxNumber);
-}
+    const cpuInfoScore = document.querySelector('.cpu-info .score');
+    const cpuInfoIcon = document.querySelector('.cpu-info .icon');
+    const cpuInfoText = document.querySelector('.cpu-info .text');
 
-function getComputerSelection() {
-    return SELECTIONS[getRandomNumber(SELECTIONS.length)];
-}
+    const hint = document.querySelector('.hint');
+    const selectionsContainer = document.querySelector('.selections');
+    const selections = document.querySelectorAll('.selection');
 
-function getUserSelection() {
-    while (true) {
-        let userSelection = prompt('Rock, paper or scissors?');
+    const playAgain = document.querySelector('.play-again');
+    playAgain.addEventListener('click', resetGame);
 
-        // User pressed 'Cancel' button
-        if(userSelection === null) {
-            return null;
-        }
-
-        // User submited an empty response
-        if (userSelection.length === 0) {
-            console.warn('Empty response! Please type your selection and try again.');
-            continue;
-        }
-
-        userSelection = userSelection.toLowerCase();
-        // User submited an invalid response
-        if (!SELECTIONS.includes(userSelection)) {
-            console.warn(`${userSelection} is an invalid reponse! Please select one of the given selections and try again.`);
-            continue;
-        }
-
-        return userSelection;
-    }
-}
-
-function playRound(userSelection, computerSelection, gameStatus) {
-    console.log(`User selected ${userSelection}!`);
-    console.log(`Computer selected ${computerSelection}!`);
-
-    if (userSelection === computerSelection) {
-        console.log('Tie!');
-        return;
-    }
-
-    /*
-    rock beats scissors
-    paper beats rock
-    scissors beats paper
-    */
-    if (userSelection === 'rock' && computerSelection === 'scissors' ||
-        userSelection === 'paper' && computerSelection === 'rock' ||
-        userSelection === 'scissors' && computerSelection === 'paper') {
-            console.log(`User won this round; ${userSelection} beats ${computerSelection}!`);
-            ++gameStatus.userPoints;
-            return;
-    }
-    console.log(`Computer won this round; ${computerSelection} beats ${userSelection}!`);
-    ++gameStatus.computerPoints;
-}
-
-function playGame() {
-    console.log(`First to ${MAX_POINTS}, wins the game!`)
-
-    let rounds = 1;
-    const gameStatus = {
+    const gameState = {
         userPoints: 0,
-        computerPoints: 0
+        cpuPoints: 0,
+        round: 1,
     };
-    while (gameStatus.userPoints < MAX_POINTS && gameStatus.computerPoints < MAX_POINTS) {
-        console.log(`Starting ${rounds++}. round...`);
 
-        const userSelection = getUserSelection();
-        if (userSelection === null) {
-            console.log('User cancelled the game...');
-            return;
-        }
-        const computerSelection = getComputerSelection();
-        playRound(userSelection, computerSelection, gameStatus);
-
-        console.log('-----------------------------');
+    function animateElement(element, animationName) {
+        return new Promise((resolve, reject) => {
+            const nodeElement = document.querySelector(element);
+            if (nodeElement === null) {
+                reject(new Error(`Can't find ${element}`));
+            }
+            nodeElement.classList.add(animationName);
+            nodeElement.addEventListener('animationend', (event) => {
+                event.stopPropagation();
+                nodeElement.classList.remove(animationName);
+                resolve(nodeElement);
+            }, { once: true });
+        });
     }
 
-    displayGameStatus(gameStatus);
-}
+    function initialGameAnimation() {
+        return Promise.all([
+            animateElement('.notification', 'slide-in-left'),
+            animateElement('.user-info', 'slide-in-left'),
+            animateElement('.cpu-info', 'slide-in-right'),
+            animateElement('.versus', 'zoom-in'),
+        ]);
+    }
 
-function displayGameStatus(gameStatus) {
-    console.log(
-        `${gameStatus.userPoints > gameStatus.computerPoints ? 'User' : 'Computer'} has won the game!`
-    );
-    console.log('Game status:');
-    console.log(
-        `\tUser has won ${gameStatus.userPoints} ${makePlural(gameStatus.userPoints, 'point')}.`
-    );
-    console.log(
-        `\tComputer has won ${gameStatus.computerPoints} ${makePlural(gameStatus.computerPoints, 'point')}.`
-    );
-}
+    function enableSelections() {
+        showSelections()
+        .then(() => {
+            selections.forEach((selection) => {
+                selection.addEventListener('click', handleUserSelection);
+            });
+            selectionsContainer.style.pointerEvents = 'auto';
+        });
+    }
 
-playGame();
+    function disableSelections() {
+        selectionsContainer.style.pointerEvents = 'none';
+        selections.forEach((selection) => {
+            selection.removeEventListener('click', handleUserSelection);
+        });
+        hideSelections();
+    }
+
+    function handleUserSelection(event) {
+        const userSelection = event.target.dataset.value;
+        if (!VALID_SELECTIONS.includes(userSelection)) {
+            return;
+        }
+
+        disableSelections();
+
+        const cpuSelection = getCpuSelection();
+        displayPlayersSelections(userSelection, cpuSelection);
+
+        const roundResult = playRound(userSelection, cpuSelection);
+        displayRoundResult(roundResult)
+        .then(() => {
+            if (!checkForGameEnd()) {
+                prepareForNextRound();
+            } else {
+                endGame();
+            }
+        });
+    }
+
+    function getCpuSelection() {
+        return VALID_SELECTIONS[getRandomNumber(VALID_SELECTIONS.length)];
+    }
+
+    function getRandomNumber(maxNumber) {
+        return Math.floor(Math.random() * maxNumber);
+    }
+
+    function displayPlayersSelections(userSelection, cpuSelection) {
+        userInfoIcon.src = `icons/${userSelection}-100.png`;
+        userInfoIcon.alt = `${userSelection} hand gesture icon`;
+        userInfoText.textContent = userSelection;
+
+        cpuInfoIcon.src = `icons/${cpuSelection}-100.png`;
+        cpuInfoIcon.alt = `${cpuSelection} hand gesture icon`;
+        cpuInfoText.textContent = cpuSelection;
+    }
+
+    function playRound(userSelection, cpuSelection) {
+        let roundResult;
+        if (userSelection === cpuSelection) {
+            roundResult = ROUND_RESULT.DRAW;
+        } else if (
+            (userSelection === 'rock' && cpuSelection === 'scissors')
+            || (userSelection === 'paper' && cpuSelection === 'rock')
+            || (userSelection === 'scissors' && cpuSelection === 'paper')
+        ) {
+            ++gameState.userPoints;
+            roundResult = ROUND_RESULT.USER_WON;
+        } else {
+            ++gameState.cpuPoints;
+            roundResult = ROUND_RESULT.CPU_WON;
+        }
+
+        ++gameState.round;
+        return roundResult;
+    }
+
+    function displayRoundResult(roundResult) {
+        return animateElement('.notification', 'slide-out-right')
+        .then((nodeElement) => {
+            nodeElement.textContent = roundResult;
+        })
+        .then(() => animateElement('.notification', 'slide-in-left'))
+        .then(() => updatePlayersScore());
+    }
+
+    function checkForGameEnd() {
+        return gameState.userPoints >= MAX_POINTS || gameState.cpuPoints >= MAX_POINTS;
+    }
+
+    function prepareForNextRound(newGame = false) {
+        return animateElement('.notification', 'slide-out-right')
+        .then((nodeElement) => {
+            nodeElement.textContent = `round: ${gameState.round}`;
+            resetPlayersSelections(newGame);
+        })
+        .then(() => animateElement('.notification', 'slide-in-left'))
+        .then(() => enableSelections());
+    }
+
+    function resetPlayersSelections(newGame = false) {
+        if (newGame) {
+            userInfoScore.textContent = 0;
+            cpuInfoScore.textContent = 0;
+        }
+
+        userInfoIcon.src = `icons/placeholder.png`;
+        userInfoIcon.alt = 'question mark icon';
+        userInfoText.textContent = '?';
+
+        cpuInfoIcon.src = `icons/placeholder.png`;
+        userInfoIcon.alt = 'question mark icon';
+        cpuInfoText.textContent = '?';
+    }
+
+    function updatePlayersScore() {
+        userInfoScore.textContent = gameState.userPoints;
+        cpuInfoScore.textContent = gameState.cpuPoints;
+    }
+
+    function endGame() {
+        displayGameResult()
+        .then(() => showPlayAgain());
+    }
+
+    function displayGameResult() {
+        return animateElement('.notification', 'slide-out-right')
+        .then((nodeElement) => {
+            let winner;
+            if (gameState.userPoints > gameState.cpuPoints) {
+                winner = 'user';
+
+                userInfoIcon.src = `icons/winner.png`;
+                userInfoIcon.alt = 'winner icon';
+                userInfoText.textContent = 'winner';
+
+                cpuInfoIcon.src = `icons/loser.png`;
+                userInfoIcon.alt = 'loser icon';
+                cpuInfoText.textContent = 'loser';
+            } else {
+                winner = 'cpu';
+
+                userInfoIcon.src = `icons/loser.png`;
+                userInfoIcon.alt = 'loser icon';
+                userInfoText.textContent = 'loser';
+
+                cpuInfoIcon.src = `icons/winner.png`;
+                cpuInfoIcon.alt = 'winner icon';
+                cpuInfoText.textContent = 'winner';
+            }
+            nodeElement.textContent = `${winner} won the game!`;
+        })
+        .then(() => animateElement('.notification', 'slide-in-left'));
+    }
+
+    function showSelections() {
+        selectionsContainer.style.display = 'flex';
+        hint.style.display = 'block';
+        return Promise.all([
+            animateElement('.hint', 'fade-in'),
+            animateElement('.selections', 'slide-in-up'),
+        ]);
+    }
+
+    function hideSelections() {
+        return Promise.all([
+            animateElement('.hint', 'fade-out')
+            .then((nodeElement) => {
+                nodeElement.style.display = 'none';
+            }),
+            animateElement('.selections', 'slide-out-down')
+            .then((nodeElement) => {
+                nodeElement.style.display = 'none';
+            }),
+        ]);
+    }
+
+    function showPlayAgain() {
+        playAgain.style.display = 'block';
+        return animateElement('.play-again', 'zoom-in');
+    }
+
+    function hidePlayAgain() {
+        return animateElement('.play-again', 'zoom-out')
+        .then((nodeElement) => {
+            nodeElement.style.display = 'none';
+        });
+    }
+
+    function resetGame() {
+        gameState.userPoints = 0;
+        gameState.cpuPoints = 0;
+        gameState.round = 1;
+
+        prepareForNextRound(true);
+
+        hidePlayAgain()
+        .then(() => showSelections());
+    }
+
+    initialGameAnimation()
+    .then(() => {
+        enableSelections();
+    });
+}());

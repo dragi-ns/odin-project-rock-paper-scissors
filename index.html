@@ -2,11 +2,89 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Odin Project: Rock, Paper, Scissors</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rock, paper, scissors | Odin Project</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet"> 
+        <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <h2>Open JavaScript console...</h2>
-        <p><a href="https://www.theodinproject.com/paths/foundations/courses/foundations/lessons/rock-paper-scissors" target="_blank">Odin Project: Rock, paper or scissors</a></p>
+        <header>
+            <h1 class="title">Rock &lt; Paper &lt; Scissors</h1>
+            <p class="description">First to 5 points, wins the game!</p>
+        </header>
+        <main>
+            <div class="game-status">
+                <p class="notification">round: 1</p>
+                <div class="cards">
+                    <div class="card user-info">
+                        <div class="card-header">
+                            user: <span class="score">0</span>
+                        </div>
+                        <div class="card-content">
+                            <img class="icon" src="icons/placeholder.png" alt="question mark icon">
+                        </div>
+                        <div class="card-footer">
+                            <p class="text">?</p>
+                        </div>
+                    </div><!-- .card.user-info -->
+
+                    <p class="versus">VS</p>
+
+                    <div class="card cpu-info">
+                        <div class="card-header">
+                            cpu: <span class="score">0</span>
+                        </div>
+                        <div class="card-content">
+                            <img class="icon" src="icons/placeholder.png" alt="question mark icon">
+                        </div>
+                        <div class="card-footer">
+                            <p class="text">?</p>
+                        </div>
+                    </div><!-- .card.cpu-info -->
+
+                </div><!-- .cards -->
+            </div><!-- .game-status -->
+            <p class="hint">Choose wisely... </p>
+            <button type="button" class="play-again">play again</button>
+            <div class="selections">
+                <div class="selection" data-value="rock">
+                    <div class="selection-content">
+                        <img src="icons/rock-50.png" alt="rock hand gesture icon">
+                    </div>
+                    <div class="selection-footer">
+                        rock
+                    </div>
+                </div><!-- .selection -->
+
+                <div class="selection" data-value="paper">
+                    <div class="selection-content">
+                        <img src="icons/paper-50.png" alt="paper hand gesture icon">
+                    </div>
+                    <div class="selection-footer">
+                        paper
+                    </div>
+                </div><!-- .selection -->
+
+                <div class="selection" data-value="scissors">
+                    <div class="selection-content">
+                        <img src="icons/scissors-50.png" alt="scissors hand gesture icon">
+                    </div>
+                    <div class="selection-footer">
+                        scissors
+                    </div>
+                </div><!-- .selection -->
+
+            </div><!-- .selections -->
+        </main>
+        <footer>
+            <p>
+                <a href="https://github.com" target="_blank">
+                    <img src="icons/github-32.png" alt="github logo icon">
+                </a>
+            </p>
+        </footer>
         <script src="script.js"></script>
     </body>
 </html>
