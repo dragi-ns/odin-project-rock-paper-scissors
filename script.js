@@ -53,10 +53,11 @@
     }
 
     function enableSelections() {
-        showSelections()
+        return showSelections()
         .then(() => {
             selections.forEach((selection) => {
                 selection.addEventListener('click', handleUserSelection);
+                selection.addEventListener('keydown', handleUserSelection);
             });
             selectionsContainer.style.pointerEvents = 'auto';
         });
@@ -66,17 +67,26 @@
         selectionsContainer.style.pointerEvents = 'none';
         selections.forEach((selection) => {
             selection.removeEventListener('click', handleUserSelection);
+            selection.removeEventListener('keydown', handleUserSelection);
         });
-        hideSelections();
+        return hideSelections();
     }
 
     function handleUserSelection(event) {
+        if (
+            event.type === 'keydown'
+            && (event.keyCode !== 13 && event.keyCode !== 32)
+        ) {
+            return;
+        }
+
         const userSelection = event.target.dataset.value;
         if (!VALID_SELECTIONS.includes(userSelection)) {
             return;
         }
 
-        disableSelections();
+        disableSelections()
+        .then(() => event.target.blur());
 
         const cpuSelection = getCpuSelection();
         displayPlayersSelections(userSelection, cpuSelection);
